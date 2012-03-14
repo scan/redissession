@@ -1,4 +1,7 @@
-module Web.RedisSession where
+module Web.RedisSession (
+		withRedis, withRedisLocal,
+		setSession, getSession
+	) where
 
 import Database.Redis.Redis
 import Data.ByteString (ByteString)
