@@ -22,6 +22,11 @@ setSession key value redis = do
 	set redis key $ encode value
 	return ()
 
+setSessionExpiring :: (Binary a) => ByteString -> a -> Int -> Redis -> IO ()
+setSessionExpiring key value timeout redis = do
+	setEx redis key timeout $ encode value
+	return ()
+
 getSession :: (Binary a) => ByteString -> Redis -> IO (Maybe a)
 getSession key redis = do
 	val <- get redis key
