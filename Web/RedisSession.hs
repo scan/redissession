@@ -7,15 +7,19 @@ import Database.Redis.Redis
 import Data.ByteString (ByteString)
 import Data.Binary (decode, encode, Binary)
 
+withRedis :: String -> String -> (Redis -> IO a) -> IO a
 withRedis server port f = do
 	redis <- connect server port
-	f redis
+	x <- f redis
 	disconnect redis
+	return x
 
+withRedisLocal :: (Redis -> IO a) -> IO a
 withRedisLocal f = do
 	redis <- connect localhost defaultPort
-	f redis
+	x <- f redis
 	disconnect redis
+	return x
 
 setSession :: (Binary a) => ByteString -> a -> Redis -> IO ()
 setSession key value redis = do
