@@ -15,11 +15,7 @@ withRedis server port f = do
 	return x
 
 withRedisLocal :: (Redis -> IO a) -> IO a
-withRedisLocal f = do
-	redis <- connect localhost defaultPort
-	x <- f redis
-	disconnect redis
-	return x
+withRedisLocal = withRedis localhost defaultPort
 
 setSession :: (Binary a) => ByteString -> a -> Redis -> IO ()
 setSession key value redis = do
