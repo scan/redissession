@@ -15,5 +15,5 @@ source-repository head
   location: https://scan@github.com/scan/redissession.git
 
 library
-  build-depends: base >= 4 && < 5, bytestring >= 0.9, redis >= 0.12, binary
+  build-depends: base >= 4 && < 5, bytestring >= 0.9, redis >= 0.12, binary, pool-conduit
   exposed-modules: Web.RedisSession
