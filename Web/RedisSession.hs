@@ -1,40 +1,47 @@
 module Web.RedisSession (
-		withRedis, withRedisLocal,
 		makeRedisConnectionPool,
-		setSession, getSession
+		makeRedisLocalConnectionPool,
+		setSession, setSessionExpiring,
+		getSession,
+		newKey
 	) where
 
 import Database.Redis.Redis
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import Data.ByteString.Lazy (toChunks)
 import Data.Binary (decode, encode, Binary)
 import Data.Conduit.Pool
+import System.Entropy (getEntropy)
+import Data.Digest.Pure.MD5 (md5)
+import Data.Time (getCurrentTime)
 
-withRedis :: String -> String -> (Redis -> IO a) -> IO a
-withRedis server port f = do
-	redis <- connect server port
-	x <- f redis
-	disconnect redis
-	return x
-
-withRedisLocal :: (Redis -> IO a) -> IO a
-withRedisLocal = withRedis localhost defaultPort
-
+makeRedisConnectionPool :: String -> String -> IO (Pool Redis)
 makeRedisConnectionPool server port = createPool (connect server port) disconnect 1 0.5 1
 
-setSession :: (Binary a) => ByteString -> a -> Redis -> IO ()
-setSession key value redis = do
+makeRedisLocalConnectionPool :: IO (Pool Redis)
+makeRedisLocalConnectionPool = makeRedisConnectionPool localhost defaultPort
+
+setSession :: (Binary a) => Pool Redis -> ByteString -> a -> IO ()
+setSession pool key value = withResource pool $ \redis -> do
 	set redis key $ encode value
 	return ()
 
-setSessionExpiring :: (Binary a) => ByteString -> a -> Int -> Redis -> IO ()
-setSessionExpiring key value timeout redis = do
+setSessionExpiring :: (Binary a) => Pool Redis -> ByteString -> a -> Int -> IO ()
+setSessionExpiring pool key value timeout = withResource pool $ \redis -> do
 	setEx redis key timeout $ encode value
 	return ()
 
-getSession :: (Binary a) => ByteString -> Redis -> IO (Maybe a)
-getSession key redis = do
+getSession :: (Binary a) => Pool Redis -> ByteString -> IO (Maybe a)
+getSession pool key = withResource pool $ \redis -> do
 	val <- get redis key
 	case val of
 		RBulk Nothing -> return Nothing
 		RBulk (Just v) -> return $ Just $ decode v
 		_ -> return Nothing
+
+newKey :: IO ByteString
+newKey = do
+	ent <- getEntropy 80
+	now <- getCurrentTime
+	return $ B.concat [(B.concat . toChunks . encode . md5 . encode . show) now, ent]
