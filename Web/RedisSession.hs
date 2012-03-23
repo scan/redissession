@@ -3,7 +3,8 @@ module Web.RedisSession (
 		makeRedisLocalConnectionPool,
 		setSession, setSessionExpiring,
 		getSession,
-		newKey
+		newKey,
+		Redis
 	) where
 
 import Database.Redis.Redis
